@@ -6,18 +6,47 @@
   <title>Batman Protocol</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body, html { background: #060607; overflow: hidden; height: 100%; }
+    body, html { background: #060607; overflow: hidden; height: 100%; font-family: Georgia, serif; }
     ::-webkit-scrollbar { display: none; }
     textarea, input { caret-color: #C8A951; outline: none; }
     button { outline: none; border: none; }
+    /* Fallback visible if React fails */
+    #fallback-message {
+      display: none;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #F5EFE1; font-size: 1.2rem; text-align: center;
+    }
   </style>
-  <!-- React + ReactDOM + Babel standalone -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- React + ReactDOM + Babel from jsDelivr (more reliable) -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
   <div id="root"></div>
+
+  <!-- Fallback message if React doesn't mount after 3 seconds -->
+  <div id="fallback-message">
+    ⚠️ Something went wrong.<br/>
+    Please check your internet connection or try again later.
+  </div>
+
+  <script>
+    // Show fallback if React doesn't render within 3 seconds
+    setTimeout(function() {
+      if (!document.getElementById('root').innerHTML.trim()) {
+        document.getElementById('fallback-message').style.display = 'block';
+      }
+    }, 3000);
+
+    // If Babel or React fails to load, show fallback
+    window.addEventListener('error', function(e) {
+      if (e.target.tagName === 'SCRIPT') {
+        document.getElementById('fallback-message').style.display = 'block';
+      }
+    }, true);
+  </script>
 
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
@@ -199,6 +228,8 @@
             S.set("batman:meta", nm);
           }
           setLoaded(true);
+          // Hide fallback message if it was showing
+          document.getElementById('fallback-message').style.display = 'none';
         })();
       }, []);
 
@@ -250,7 +281,7 @@
 
       if (!loaded) return (
         <div style={{ height: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ ...mono, fontSize: 10, letterSpacing: 5, color: C.textM }}>LOADING DOSSIER...</div>
+          <div style={{ ...mono, fontSize: 10, letterSpacing: 5, color: "#F5EFE1" }}>LOADING DOSSIER...</div>
         </div>
       );
 
@@ -259,70 +290,13 @@
         <div style={{ padding: "24px 20px" }}>
           <div style={{ ...mono, fontSize: 9, letterSpacing: 4, color: C.textM, marginBottom: 4 }}>{fmt(TODAY).toUpperCase()}</div>
           <h2 style={{ ...serif, fontSize: 24, color: C.textP, margin: "0 0 24px", fontWeight: 400 }}>Command Center</h2>
-
-          <div style={{ background: C.surf, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16, borderLeft: `3px solid ${accent}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-              <div style={{ position: "relative", flexShrink: 0 }}>
-                <Ring pct={pct} color={accent} size={88} />
-                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <div style={{ ...mono, fontSize: 18, color: accent, lineHeight: 1 }}>{pct}</div>
-                  <div style={{ ...mono, fontSize: 7, color: C.textM, letterSpacing: 2 }}>TODAY</div>
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: C.textM, marginBottom: 12 }}>TODAY'S PROTOCOLS</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  {[
-                    { label: "HABITS", val: `${doneHabits}/${totalHabits}`, c: accent },
-                    { label: "TRAINING", val: trainCount > 0 ? "LOGGED" : "PENDING", c: trainCount > 0 ? ACCENT.training : C.textM },
-                    { label: "JOURNAL", val: noteEntry.wins ? "DONE" : "PENDING", c: noteEntry.wins ? ACCENT.notes : C.textM },
-                    { label: "DAY", val: `+${daysActive}`, c: C.textS },
-                  ].map(item => (
-                    <div key={item.label}>
-                      <div style={{ ...mono, fontSize: 7, letterSpacing: 3, color: C.textM }}>{item.label}</div>
-                      <div style={{ ...mono, fontSize: 13, color: item.c, marginTop: 2 }}>{item.val}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ border: `1px solid ${C.border}`, borderLeft: `2px solid ${C.textM}`, padding: "16px 18px", marginBottom: 16 }}>
-            <div style={{ ...mono, fontSize: 8, letterSpacing: 4, color: C.textM, marginBottom: 8 }}>TODAY'S DIRECTIVE</div>
-            <div style={{ ...serif, fontSize: 14, color: C.textS, lineHeight: 1.8, fontStyle: "italic", marginBottom: 6 }}>
-              "{QUOTES[quoteIdx].text}"
-            </div>
-            <div style={{ ...mono, fontSize: 8, color: C.textM, letterSpacing: 2 }}>{QUOTES[quoteIdx].src}</div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-            {[
-              { label: "BOOKS READ", val: booksRead, total: BOOKS.length, color: ACCENT.intel },
-              { label: "MILESTONES", val: milestoneDone, total: MILESTONES.length, color: ACCENT.mission },
-              { label: "SESSIONS", val: training.length, total: "total", color: ACCENT.training },
-            ].map(s => (
-              <div key={s.label} style={{ background: C.surf, border: `1px solid ${C.border}`, padding: "14px 12px", textAlign: "center" }}>
-                <div style={{ ...mono, fontSize: 20, color: s.color, lineHeight: 1 }}>{s.val}</div>
-                <div style={{ ...mono, fontSize: 6, letterSpacing: 2, color: C.textM, marginTop: 4 }}>
-                  {s.label}{typeof s.total === "number" ? ` / ${s.total}` : ""}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ border: `1px solid ${C.border}`, padding: "16px 18px" }}>
-            <div style={{ ...mono, fontSize: 8, letterSpacing: 4, color: C.textM, marginBottom: 12 }}>THE CODE — READ DAILY</div>
-            {["Keep your word. Always.", "Do not complain. Solve, or accept.", "Treat every person with dignity.", "Act with integrity when no one is watching.", "Never sacrifice long-term growth for comfort.", "Own failures completely. Extract the lesson.", "Remain the same person in triumph and defeat.", "Never touch what destroys the mind.", "Protect those who cannot protect themselves.", "Never stop becoming."].map((rule, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 8, alignItems: "flex-start" }}>
-                <div style={{ ...mono, fontSize: 9, color: C.textM, flexShrink: 0, marginTop: 2 }}>{String(i + 1).padStart(2, "0")}</div>
-                <div style={{ ...serif, fontSize: 13, color: C.textS, lineHeight: 1.6 }}>{rule}</div>
-              </div>
-            ))}
-          </div>
+          {/* ... rest of views are identical to the previous version ... */}
+          {/* I'll keep them the same for brevity, but they're in the full code below */}
         </div>
       );
 
+      // For brevity, the complete views are included in the final block at the end.
+      // They are the same as in the previous brightened version.
       const Protocols = () => (
         <div style={{ padding: "24px 20px" }}>
           <div style={{ ...mono, fontSize: 9, letterSpacing: 4, color: C.textM, marginBottom: 4 }}>DAILY DISCIPLINE</div>
@@ -603,7 +577,76 @@
         );
       };
 
-      const VIEWS = { command: Command, protocols: Protocols, training: Training, mission: Mission, intel: Intel, notes: Notes };
+      // Also include the Command view fully (I'll add it now)
+      const CommandView = () => (
+        <div style={{ padding: "24px 20px" }}>
+          <div style={{ ...mono, fontSize: 9, letterSpacing: 4, color: C.textM, marginBottom: 4 }}>{fmt(TODAY).toUpperCase()}</div>
+          <h2 style={{ ...serif, fontSize: 24, color: C.textP, margin: "0 0 24px", fontWeight: 400 }}>Command Center</h2>
+
+          <div style={{ background: C.surf, border: `1px solid ${C.border}`, padding: 20, marginBottom: 16, borderLeft: `3px solid ${accent}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <Ring pct={pct} color={accent} size={88} />
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ ...mono, fontSize: 18, color: accent, lineHeight: 1 }}>{pct}</div>
+                  <div style={{ ...mono, fontSize: 7, color: C.textM, letterSpacing: 2 }}>TODAY</div>
+                </div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ ...mono, fontSize: 9, letterSpacing: 3, color: C.textM, marginBottom: 12 }}>TODAY'S PROTOCOLS</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                  {[
+                    { label: "HABITS", val: `${doneHabits}/${totalHabits}`, c: accent },
+                    { label: "TRAINING", val: trainCount > 0 ? "LOGGED" : "PENDING", c: trainCount > 0 ? ACCENT.training : C.textM },
+                    { label: "JOURNAL", val: noteEntry.wins ? "DONE" : "PENDING", c: noteEntry.wins ? ACCENT.notes : C.textM },
+                    { label: "DAY", val: `+${daysActive}`, c: C.textS },
+                  ].map(item => (
+                    <div key={item.label}>
+                      <div style={{ ...mono, fontSize: 7, letterSpacing: 3, color: C.textM }}>{item.label}</div>
+                      <div style={{ ...mono, fontSize: 13, color: item.c, marginTop: 2 }}>{item.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ border: `1px solid ${C.border}`, borderLeft: `2px solid ${C.textM}`, padding: "16px 18px", marginBottom: 16 }}>
+            <div style={{ ...mono, fontSize: 8, letterSpacing: 4, color: C.textM, marginBottom: 8 }}>TODAY'S DIRECTIVE</div>
+            <div style={{ ...serif, fontSize: 14, color: C.textS, lineHeight: 1.8, fontStyle: "italic", marginBottom: 6 }}>
+              "{QUOTES[quoteIdx].text}"
+            </div>
+            <div style={{ ...mono, fontSize: 8, color: C.textM, letterSpacing: 2 }}>{QUOTES[quoteIdx].src}</div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
+            {[
+              { label: "BOOKS READ", val: booksRead, total: BOOKS.length, color: ACCENT.intel },
+              { label: "MILESTONES", val: milestoneDone, total: MILESTONES.length, color: ACCENT.mission },
+              { label: "SESSIONS", val: training.length, total: "total", color: ACCENT.training },
+            ].map(s => (
+              <div key={s.label} style={{ background: C.surf, border: `1px solid ${C.border}`, padding: "14px 12px", textAlign: "center" }}>
+                <div style={{ ...mono, fontSize: 20, color: s.color, lineHeight: 1 }}>{s.val}</div>
+                <div style={{ ...mono, fontSize: 6, letterSpacing: 2, color: C.textM, marginTop: 4 }}>
+                  {s.label}{typeof s.total === "number" ? ` / ${s.total}` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ border: `1px solid ${C.border}`, padding: "16px 18px" }}>
+            <div style={{ ...mono, fontSize: 8, letterSpacing: 4, color: C.textM, marginBottom: 12 }}>THE CODE — READ DAILY</div>
+            {["Keep your word. Always.", "Do not complain. Solve, or accept.", "Treat every person with dignity.", "Act with integrity when no one is watching.", "Never sacrifice long-term growth for comfort.", "Own failures completely. Extract the lesson.", "Remain the same person in triumph and defeat.", "Never touch what destroys the mind.", "Protect those who cannot protect themselves.", "Never stop becoming."].map((rule, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, marginBottom: 8, alignItems: "flex-start" }}>
+                <div style={{ ...mono, fontSize: 9, color: C.textM, flexShrink: 0, marginTop: 2 }}>{String(i + 1).padStart(2, "0")}</div>
+                <div style={{ ...serif, fontSize: 13, color: C.textS, lineHeight: 1.6 }}>{rule}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+      const VIEWS = { command: CommandView, protocols: Protocols, training: Training, mission: Mission, intel: Intel, notes: Notes };
       const ActiveView = VIEWS[tab];
 
       return (
